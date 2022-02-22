@@ -9,10 +9,9 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *linearActuator1 = AFMS.getMotor(1);
 Adafruit_DCMotor *linearActuator2 = AFMS.getMotor(2);
 
-
 void setup() {
+  // set LED pin
   pinMode(13, OUTPUT);
-  digitalWrite(13, HIGH);
 
   if (AFMS.begin()) {
     // motor shield found

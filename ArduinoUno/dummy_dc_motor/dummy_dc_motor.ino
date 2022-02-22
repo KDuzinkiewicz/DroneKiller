@@ -6,32 +6,51 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 // Adafruit_MotorShield AFMS = Adafruit_MotorShield(0x61);
 
 // Select which 'port' M1, M2, M3 or M4. In this case, M1
-Adafruit_DCMotor *myMotor = AFMS.getMotor(1);
-// You can also make another motor on port M2
-//Adafruit_DCMotor *myOtherMotor = AFMS.getMotor(2);
+Adafruit_DCMotor *linearActuator1 = AFMS.getMotor(1);
+Adafruit_DCMotor *linearActuator2 = AFMS.getMotor(2);
 
 
 void setup() {
+  pinMode(13, OUTPUT);
+  digitalWrite(13, HIGH);
+
   if (AFMS.begin()) {
     // motor shield found
-    pinMode(13, OUTPUT);
-    digitalWrite(13, HIGH);
 
     // Set the speed to start, from 0 (off) to 255 (max speed)
-    myMotor->setSpeed(255);
-    myMotor->run(FORWARD);
-    // turn on motor
-    //myMotor->run(RELEASE);
+    linearActuator1->setSpeed(255);
+    linearActuator1->run(FORWARD);
+    linearActuator2->setSpeed(255);
+    linearActuator2->run(FORWARD);
+
+    // turn on both motors
+    linearActuator1->run(RELEASE);
+    linearActuator2->run(RELEASE);
+  }
+  else {
+    return;
   }
 }
 
 void loop() {
-    // myMotor->run(FORWARD);
-    // delay(1000);
+    // turn on both linear actuators for a brief time to pull the trigger
+    // NOTE: Single linear actuator can draw up to 4A during startup so we need to make it quick
+    linearActuator1->run(FORWARD);
+    linearActuator2->run(FORWARD);
+    delay(300);
 
+    // turn off both linear actuators immadiatelly not to burn the motor controller
+    linearActuator1->run(RELEASE);
+    linearActuator2->run(RELEASE);
 
-//   digitalWrite(13, HIGH);
-//   delay(1000);
-//   digitalWrite(13, LOW);
-//   delay(500);
+    // let the motor controller to coo off
+    delay(5000);
+
+    // blink LED to iindicate that we are not in reset state
+    for (int i=0; i<3; i++) {
+      digitalWrite(13, HIGH);
+      delay(500);
+      digitalWrite(13, LOW);
+      delay(500);
+    }
 }

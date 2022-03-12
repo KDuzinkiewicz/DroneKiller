@@ -1,0 +1,1 @@
+print('Karol jest super')

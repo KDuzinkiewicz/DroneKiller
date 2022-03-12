@@ -38,14 +38,14 @@ void loop() {
     linearActuator2->run(FORWARD);
     delay(300);
 
-    // turn off both linear actuators immadiatelly not to burn the motor controller
+    // turn off both linear actuators immediately not to burn the motor controller
     linearActuator1->run(RELEASE);
     linearActuator2->run(RELEASE);
 
     // let the motor controller to coo off
     delay(5000);
 
-    // blink LED to iindicate that we are not in reset state
+    // blink LED to indicate that we are not in reset state
     for (int i=0; i<3; i++) {
       digitalWrite(13, HIGH);
       delay(500);

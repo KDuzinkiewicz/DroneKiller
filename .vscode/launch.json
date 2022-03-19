@@ -1,7 +1,4 @@
 {
-    // Użyj funkcji IntelliSense, aby uzyskać informacje o możliwych atrybutach.
-    // Najedź kursorem, aby wyświetlić opisy istniejących atrybutów.
-    // Aby uzyskać więcej informacji, odwiedź stronę: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -9,6 +6,13 @@
             "type": "python",
             "request": "launch",
             "program": "PC/dummy_serial/dummy_serial.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: dummy_camera.py",
+            "type": "python",
+            "request": "launch",
+            "program": "PC/dummy_camera/dummy_camera.py",
             "console": "integratedTerminal"
         }
     ]

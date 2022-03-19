@@ -7,8 +7,10 @@ import time
 
 ARDUINO_SERIAL_PORT = 'COM7'
 
+
 # set root logger log level
 logging.getLogger().setLevel(logging.INFO)
+
 
 def main():
     logging.info('*** Serial Port Example ***')
@@ -29,6 +31,7 @@ def main():
         time.sleep(2)
 
     logging.info('DONE')
+
 
 if __name__ == "__main__":
     main()

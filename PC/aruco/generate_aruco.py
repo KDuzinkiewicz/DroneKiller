@@ -7,7 +7,7 @@ MARKER_SIZE_IN_MM = 200
 marker_id = int(input(f'Enter marker ID: '))
 
 # load the predefined dictionary
-dictionary = aruco.Dictionary_get(cv2.aruco.DICT_4X4_250)
+dictionary = aruco.Dictionary_get(aruco.DICT_4X4_250)
 
 # generate the marker image
 markerImage = np.zeros((MARKER_SIZE_IN_MM, MARKER_SIZE_IN_MM), dtype=np.uint8)

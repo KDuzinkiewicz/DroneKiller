@@ -45,6 +45,12 @@ def main():
     logging.info('Dummy Camera Example')
     cameras = get_cameras(max_idx=3)
 
+    # load ArUco marker dictionary
+    aruco_dictionary = aruco.Dictionary_get(aruco.DICT_4X4_250)
+
+    # initialize the detector parameters using default values
+    parameters =  aruco.DetectorParameters_create()
+
     if cameras is None:
         logging.error('No cameras found')
         return
@@ -71,6 +77,9 @@ def main():
         # get next video frame
         video_frame = video_capture.read()[1]
 
+        # detect the markers in the image
+        marker_corners, marker_ids, rejected_candidates = aruco.detectMarkers(video_frame, aruco_dictionary, parameters=parameters)
+
         # apply time left
         display_frame = video_frame.copy()
         display_frame = cv2.putText(display_frame,
@@ -79,6 +88,33 @@ def main():
             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
             fontScale=0.5,
             color=(0, 255, 0))
+
+        # apply ArUco ID and corners
+        if marker_ids is not None:
+            display_frame = cv2.putText(display_frame,
+                f'Found {len(marker_ids)} ArUco markers',
+                org=(10, 40),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=0.5,
+                color=(0, 255, 0))
+
+            for i, marker_id in enumerate(marker_ids):
+                # display ArUco marker ID in the top-left corner of the marker
+                display_frame = cv2.putText(display_frame,
+                    f'ID: {marker_id[0]}',
+                    org=(int(marker_corners[i][0, 0, 0]), int(marker_corners[i][0, 0, 1])),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=0.5,
+                    color=(0, 255, 0))
+        else:
+            display_frame = cv2.putText(display_frame,
+                'No ArUco markers found',
+                org=(10, 40),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=0.5,
+                color=(0, 255, 0))
+
+        # display modified augmented frame
         cv2.imshow(f'Camera Live Feed', display_frame)
         cv2.waitKey(1)
 

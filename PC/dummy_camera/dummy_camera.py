@@ -1,6 +1,7 @@
 import cv2
 import logging
 import time
+import cv2.aruco as aruco
 
 from cv2 import VideoCapture
 
@@ -62,13 +63,24 @@ def main():
     logging.info(f'Processing video stream for {desired_time} seconds...')
     start_time = time.time()
     while True:
-        video_frame = video_capture.read()[1]
-        cv2.imshow('Camera Feed', video_frame)
-        cv2.waitKey(1)
         current_time = time.time()
         elapsed_time = current_time - start_time
         if elapsed_time > desired_time:
             break
+
+        # get next video frame
+        video_frame = video_capture.read()[1]
+
+        # apply time left
+        display_frame = video_frame.copy()
+        display_frame = cv2.putText(display_frame,
+            f'Time left: {(desired_time - elapsed_time):.2f}',
+            org=(10, 20),
+            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontScale=0.5,
+            color=(0, 255, 0))
+        cv2.imshow(f'Camera Live Feed', display_frame)
+        cv2.waitKey(1)
 
     cv2.destroyAllWindows()
 

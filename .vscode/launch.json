@@ -14,6 +14,13 @@
             "request": "launch",
             "program": "PC/dummy_camera/dummy_camera.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: generate_aruco.py",
+            "type": "python",
+            "request": "launch",
+            "program": "PC/aruco/generate_aruco.py",
+            "console": "integratedTerminal"
         }
     ]
 }

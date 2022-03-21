@@ -1,9 +1,9 @@
+import argparse
 import cv2
 import logging
 import time
 import cv2.aruco as aruco
-
-from cv2 import VideoCapture
+import argparse
 
 
 # set root logger log level
@@ -40,10 +40,38 @@ def get_cameras(max_idx=10):
 
     return cameras
 
-def main():
 
+def main():
     logging.info('Dummy Camera Example')
-    cameras = get_cameras(max_idx=3)
+
+    # input arguments parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--camera_index", default=-1, type=int,
+                    help="camera index")
+    parser.add_argument("-t", "--time", default=-1, type=int,
+                    help="time of operation in seconds")
+    args = parser.parse_args()
+
+    if args.camera_index == -1:
+        cameras = get_cameras(max_idx=3)
+
+        if cameras is None:
+            logging.error('No cameras found')
+            return
+
+        logging.info(f'Found {len(cameras)} camera(s)')
+        for key, value in cameras.items():
+            logging.info(f'Camera idx: {key}, resolution: {value[0]} x {value[1]}')
+
+        camera_idx = int(input('Select camera index: '))
+        logging.info(f'You have selected: {camera_idx}')
+    else:
+        camera_idx = args.camera_index
+
+    if args.time == -1:
+        desired_time = int(input('Enter desired operating time in seconds: '))
+    else:
+        desired_time = args.time
 
     # load ArUco marker dictionary
     aruco_dictionary = aruco.Dictionary_get(aruco.DICT_4X4_250)
@@ -51,18 +79,7 @@ def main():
     # initialize the detector parameters using default values
     parameters =  aruco.DetectorParameters_create()
 
-    if cameras is None:
-        logging.error('No cameras found')
-        return
-
-    logging.info(f'Found {len(cameras)} camera(s)')
-    for key, value in cameras.items():
-        logging.info(f'Camera idx: {key}, resolution: {value[0]} x {value[1]}')
-
-    camera_idx = int(input('Select camera index: '))
-    logging.info(f'You have selected: {camera_idx}')
-    desired_time = int(input('Enter desired operating time in seconds: '))
-
+    # open video stream
     logging.info(f'Opening video stream for camera {camera_idx}...')
     video_capture = cv2.VideoCapture(camera_idx, cv2.CAP_DSHOW)
 
@@ -119,6 +136,8 @@ def main():
         cv2.waitKey(1)
 
     cv2.destroyAllWindows()
+    logging.info('DONE')
+    exit(0)
 
 
 if __name__ == "__main__":

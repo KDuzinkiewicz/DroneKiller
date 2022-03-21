@@ -4,6 +4,7 @@ import logging
 import time
 import cv2.aruco as aruco
 import argparse
+import numpy as np
 
 
 # set root logger log level
@@ -119,10 +120,28 @@ def main():
                 # display ArUco marker ID in the top-left corner of the marker
                 display_frame = cv2.putText(display_frame,
                     f'ID: {marker_id[0]}',
-                    org=(int(marker_corners[i][0, 0, 0]), int(marker_corners[i][0, 0, 1])),
+                    org=(int(marker_corners[i][0, 0, 0] + 10), int(marker_corners[i][0, 0, 1] + 10)),
                     fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                     fontScale=0.5,
-                    color=(0, 255, 0))
+                    color=(0, 0, 255))
+
+                # calculate position of the center of ArUco marker
+                center_x = int(np.mean(marker_corners[i].reshape(-1, 2), axis=0)[0])
+                center_y = int(np.mean(marker_corners[i].reshape(-1, 2), axis=0)[1])
+
+                # draw center of ArUco marker as cross
+                display_frame = cv2.drawMarker(display_frame,
+                    position=(center_x, center_y),
+                    color=(0, 0, 255),
+                    markerSize=50)
+
+                # draw all 4 corners of the ArUco marker
+                for corner in marker_corners[i].reshape(-1, 2):
+                    display_frame = cv2.drawMarker(display_frame,
+                        position=(int(corner[0]),
+                        int(corner[1])),
+                        color=(0, 0, 255),
+                        markerSize=10)
         else:
             display_frame = cv2.putText(display_frame,
                 'No ArUco markers found',

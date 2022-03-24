@@ -42,7 +42,27 @@ def get_cameras(max_idx=10):
     return cameras
 
 
+def load_ar_image(path):
+    img = cv2.imread(path)
+    w, h = img.shape[0:2][::-1]
+    corners = np.array([[0, 0], [w, 0], [w, h], [0, h]]).astype(int)
+    return img, w, h, corners
+
+
+def load_friendly():
+    return load_ar_image('PC/dummy_camera/friendly.png')
+
+
+def load_foe():
+    return load_ar_image('PC/dummy_camera/foe.png')
+
+
 def main():
+
+    # ArUco marker IDs legend
+    FOE_ID = 0
+    FRIENDLY_ID = 1
+
     logging.info('Dummy Camera Example')
 
     # input arguments parser
@@ -80,6 +100,12 @@ def main():
     # initialize the detector parameters using default values
     parameters =  aruco.DetectorParameters_create()
 
+    # load friendly image
+    friendly_img, friendly_w, friendly_h, friendly_corners = load_friendly()
+    logging.info(f'Friendly W x H: {friendly_w} x {friendly_h} ')
+    foe_img, foe_w, foe_h, foe_corners = load_foe()
+    logging.info(f'Foe W x H: {foe_w} x {foe_h} ')
+
     # open video stream
     logging.info(f'Opening video stream for camera {camera_idx}...')
     video_capture = cv2.VideoCapture(camera_idx, cv2.CAP_DSHOW)
@@ -94,6 +120,9 @@ def main():
 
         # get next video frame
         video_frame = video_capture.read()[1]
+
+        # create placeholder for warped image
+        warped_image = np.zeros_like(video_frame)
 
         # detect the markers in the image
         marker_corners, marker_ids, rejected_candidates = aruco.detectMarkers(video_frame, aruco_dictionary, parameters=parameters)
@@ -117,6 +146,25 @@ def main():
                 color=(0, 255, 0))
 
             for i, marker_id in enumerate(marker_ids):
+                # reshape the corners array to fit findHomography()
+                marker_corners_for_current_id = marker_corners[i].reshape(-1, 2)
+
+                # calculate homography between ArUco marker and friendly/foe image
+                img_to_warp = None
+                if marker_id == FOE_ID:
+                    img_to_warp = foe_img
+                    h, status = cv2.findHomography(foe_corners, marker_corners_for_current_id)
+                elif marker_id == FRIENDLY_ID:
+                    img_to_warp = friendly_img
+                    h, status = cv2.findHomography(friendly_corners, marker_corners_for_current_id)
+
+                # transform the source image to fit the ArUco marker
+                if img_to_warp is not None:
+                    warped_image = cv2.warpPerspective(img_to_warp, h, (display_frame.shape[1], display_frame.shape[0]))
+
+                    # replace original pixels of the video frame with pixels from warped image if they are != 0
+                    display_frame = np.where(warped_image > 0, warped_image, display_frame)
+
                 # display ArUco marker ID in the top-left corner of the marker
                 display_frame = cv2.putText(display_frame,
                     f'ID: {marker_id[0]}',
@@ -136,12 +184,14 @@ def main():
                     markerSize=50)
 
                 # draw all 4 corners of the ArUco marker
-                for corner in marker_corners[i].reshape(-1, 2):
+                for j, marker_corner in enumerate(marker_corners_for_current_id):
                     display_frame = cv2.drawMarker(display_frame,
-                        position=(int(corner[0]),
-                        int(corner[1])),
+                        position=(int(marker_corner[0]),
+                        int(marker_corner[1])),
                         color=(0, 0, 255),
-                        markerSize=10)
+                        markerSize=10,
+                        markerType=int(j % 4))
+
         else:
             display_frame = cv2.putText(display_frame,
                 'No ArUco markers found',
@@ -152,6 +202,7 @@ def main():
 
         # display modified augmented frame
         cv2.imshow(f'Camera Live Feed', display_frame)
+        # cv2.imshow(f'Warped Image', warped_image)
         cv2.waitKey(1)
 
     cv2.destroyAllWindows()

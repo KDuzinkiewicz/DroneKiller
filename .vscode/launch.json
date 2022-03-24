@@ -21,7 +21,7 @@
             "request": "launch",
             "program": "PC/dummy_camera/dummy_camera.py",
             "console": "integratedTerminal",
-            "args": ["-c", "1", "-t", "10"]
+            "args": ["-c", "1", "-t", "60"]
         },
         {
             "name": "Python: generate_aruco.py",

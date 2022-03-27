@@ -167,6 +167,8 @@ def main():
             fontScale=0.5,
             color=(0, 255, 0))
 
+        foe_markers = {}
+
         # apply ArUco ID and corners
         if marker_ids is not None:
             display_frame = cv2.putText(display_frame,
@@ -205,12 +207,12 @@ def main():
                     color=(0, 0, 255))
 
                 # calculate position of the center of ArUco marker
-                center_x = int(np.mean(marker_corners[i].reshape(-1, 2), axis=0)[0])
-                center_y = int(np.mean(marker_corners[i].reshape(-1, 2), axis=0)[1])
+                marker_center_x = int(np.mean(marker_corners[i].reshape(-1, 2), axis=0)[0])
+                marker_center_y = int(np.mean(marker_corners[i].reshape(-1, 2), axis=0)[1])
 
                 # draw center of ArUco marker as cross
                 display_frame = cv2.drawMarker(display_frame,
-                    position=(center_x, center_y),
+                    position=(marker_center_x, marker_center_y),
                     color=(0, 0, 255),
                     markerSize=50)
 
@@ -222,6 +224,9 @@ def main():
                         color=(0, 0, 255),
                         markerSize=10,
                         markerType=int(j % 4))
+
+                if marker_id == FOE_ID:
+                    foe_markers[marker_id[0]] = (marker_center_x, marker_center_y)
 
         else:
             display_frame = cv2.putText(display_frame,
@@ -237,6 +242,27 @@ def main():
             radius=DEADZONE_RADIUS_IN_PIXELS,
             color=(0, 255, 0),
             thickness=2)
+
+        if len(foe_markers) > 1:
+            # TODO: Support multiple foe targets ???
+            logger.warning(f'More than one foe detected. Targeting procedure aborted.')
+
+        if len(foe_markers) == 1:
+            # calculate distance between image center and foe markers center
+            marker_center_x, marker_center_y = foe_markers[0]
+
+            error_x = marker_center_x - frame_center[0]
+            error_y = marker_center_y - frame_center[1]
+
+            display_frame = cv2.putText(display_frame,
+                f'E.X: {error_x}, E.Y: {error_y}',
+                org=(10, 60),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=0.5,
+                color=(0, 255, 0))
+
+            # draw error vector
+            display_frame = cv2.line(display_frame, pt1=(marker_center_x, marker_center_y), pt2=frame_center, color=(0, 255, 0))
 
         # display modified augmented frame
         cv2.imshow(f'Camera Live Feed', display_frame)

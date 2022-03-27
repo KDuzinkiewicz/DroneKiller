@@ -11,15 +11,40 @@ import numpy as np
 logging.getLogger().setLevel(logging.INFO)
 
 
+def get_camera_width_height(camera_idx):
+    '''
+    Gets camera's image frame width and height
+
+    Parameters:
+        camera_idx (int): camera index
+
+    Returns:
+        width, height (int)
+    '''
+
+    video_capture = cv2.VideoCapture(camera_idx, cv2.CAP_DSHOW)
+    if not video_capture.read()[0]:
+        logging.warning(f'Invalid camera index')
+        video_capture.release()
+        return None
+    else:
+        logging.info(f'Camera idx {camera_idx} available')
+        width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
+        height = video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        logging.info(f'Camera idx {camera_idx} width: {width}, height: {height}')
+        video_capture.release()
+        return width, height
+
+
 def get_cameras(max_idx=10):
     '''
-    Gets a dictionary of camera indices and friendly names
+    Gets a dictionary of camera indices and image parameters (width and height)
 
     Parameters:
         max_idx (int): up to what idex to enumerate
 
     Returns:
-        cameras (dict): key = camera index, value = camera friendly name
+        cameras (dict): key = camera index, value = tuple: camera's image frame width and height
     '''
 
     logging.info('Enumerating cameras...')
@@ -28,16 +53,9 @@ def get_cameras(max_idx=10):
 
     for i in range(max_idx + 1):
         logging.info(f'Analyzing camera idex: {i}/{max_idx}...')
-        video_capture = cv2.VideoCapture(i, cv2.CAP_DSHOW)
-        if not video_capture.read()[0]:
-            logging.info(f'Invalid camera index')
-            continue
-        else:
-            logging.info(f'Camera available')
-            width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
-            height = video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
-            cameras[i] = (width, height)
-        video_capture.release()
+        result = get_camera_width_height(i)
+        if result is not None:
+            cameras[i] = result
 
     return cameras
 
@@ -63,6 +81,9 @@ def main():
     FOE_ID = 0
     FRIENDLY_ID = 1
 
+    # deadzoe radius definition - if the target is within this radius te robot wil not move
+    DEADZONE_RADIUS_IN_PIXELS = 50
+
     logging.info('Dummy Camera Example')
 
     # input arguments parser
@@ -73,6 +94,7 @@ def main():
                     help="time of operation in seconds")
     args = parser.parse_args()
 
+    cameras = None
     if args.camera_index == -1:
         cameras = get_cameras(max_idx=3)
 
@@ -105,6 +127,15 @@ def main():
     logging.info(f'Friendly W x H: {friendly_w} x {friendly_h} ')
     foe_img, foe_w, foe_h, foe_corners = load_foe()
     logging.info(f'Foe W x H: {foe_w} x {foe_h} ')
+
+    # get desired damera's image frame width and height
+    if cameras is not None:
+        width, height = cameras[camera_idx]
+    else:
+        width, height = get_camera_width_height(camera_idx)
+
+    # calculate camera's image frame center in pixels
+    frame_center = (int(width/2), int(height/2))
 
     # open video stream
     logging.info(f'Opening video stream for camera {camera_idx}...')
@@ -153,14 +184,14 @@ def main():
                 img_to_warp = None
                 if marker_id == FOE_ID:
                     img_to_warp = foe_img
-                    h, status = cv2.findHomography(foe_corners, marker_corners_for_current_id)
+                    homography_matrix, status = cv2.findHomography(foe_corners, marker_corners_for_current_id)
                 elif marker_id == FRIENDLY_ID:
                     img_to_warp = friendly_img
-                    h, status = cv2.findHomography(friendly_corners, marker_corners_for_current_id)
+                    homography_matrix, status = cv2.findHomography(friendly_corners, marker_corners_for_current_id)
 
                 # transform the source image to fit the ArUco marker
                 if img_to_warp is not None:
-                    warped_image = cv2.warpPerspective(img_to_warp, h, (display_frame.shape[1], display_frame.shape[0]))
+                    warped_image = cv2.warpPerspective(img_to_warp, homography_matrix, (display_frame.shape[1], display_frame.shape[0]))
 
                     # replace original pixels of the video frame with pixels from warped image if they are != 0
                     display_frame = np.where(warped_image > 0, warped_image, display_frame)
@@ -199,6 +230,13 @@ def main():
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                 fontScale=0.5,
                 color=(0, 255, 0))
+
+        # draw deadzone radius
+        display_frame = cv2.circle(display_frame,
+            center=frame_center,
+            radius=DEADZONE_RADIUS_IN_PIXELS,
+            color=(0, 255, 0),
+            thickness=2)
 
         # display modified augmented frame
         cv2.imshow(f'Camera Live Feed', display_frame)

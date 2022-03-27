@@ -16,12 +16,20 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: dummy_camera.py fixed",
+            "name": "Python: dummy_camera.py robot fixed",
             "type": "python",
             "request": "launch",
             "program": "PC/dummy_camera/dummy_camera.py",
             "console": "integratedTerminal",
             "args": ["-c", "1", "-t", "60"]
+        },
+        {
+            "name": "Python: dummy_camera.py built-in fixed",
+            "type": "python",
+            "request": "launch",
+            "program": "PC/dummy_camera/dummy_camera.py",
+            "console": "integratedTerminal",
+            "args": ["-c", "0", "-t", "60"]
         },
         {
             "name": "Python: generate_aruco.py",

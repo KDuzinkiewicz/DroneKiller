@@ -2,6 +2,8 @@ import argparse
 import cv2
 import logging
 import time
+
+from cv2 import RETR_CCOMP
 import cv2.aruco as aruco
 import argparse
 import numpy as np
@@ -75,6 +77,45 @@ def load_foe():
     return load_ar_image('PC/dummy_camera/foe.png')
 
 
+def calculate_motor_speed(error, deadzone, min_motor_speed, max_motor_speed, k):
+    '''
+    Calculates motor speed in range [min_motor_speed, max_motor_speed] or zero if th error is within deadzone
+
+    Parameters:
+        error (int): error in pixels
+        deadzone (int): deadzone in pixels
+        min_motor_speed (int): Arduino motor shield PWM setting in range of [0, 255] at which the motor starts moving
+        max_motor_speed (int): Arduino motor shield PWM setting in range of [0, 255] which we consider maximum allowable speed
+        k (float): proportional constant between error in pixels and PWM value
+
+    Returns:
+        motor_speed (int): Arduino motor shield PWM setting in range of [-255, 255]
+        NOTE: user will need to check for motor speed sign to set proper motor direction using Arduino library
+    '''
+
+    assert min_motor_speed < max_motor_speed, 'Min. motor speed has to be smaller than max. speed'
+    assert type(min_motor_speed) is int
+    assert type(max_motor_speed) is int
+    assert min_motor_speed >= 0
+    assert max_motor_speed <= 255
+
+    if abs(error) <= deadzone:
+        return 0
+
+    # calculate desired motor speed to eliminate the error (simple P-control)
+    # NOTE: The + and - pins of the DC motor need to be connected accordingly to be aligned with positive and
+    # negative error in the pixel domain
+    motor_speed = k * error
+
+    if abs(motor_speed) > max_motor_speed:
+        return max_motor_speed if error > 0 else -max_motor_speed
+
+    if abs(motor_speed) < min_motor_speed:
+        return min_motor_speed if error > 0 else -min_motor_speed
+
+    return motor_speed
+
+
 def main():
 
     # ArUco marker IDs legend
@@ -83,6 +124,14 @@ def main():
 
     # deadzoe radius definition - if the target is within this radius te robot wil not move
     DEADZONE_RADIUS_IN_PIXELS = 50
+
+    # min motor speed
+    MIN_X_MOTOR_SPEED = 100
+    MAX_X_MOTOR_SPEED = 255
+    K_X = 1.0
+    MIN_Y_MOTOR_SPEED = 100
+    MAX_Y_MOTOR_SPEED = 255
+    K_Y = 1.0
 
     logging.info('Dummy Camera Example')
 
@@ -245,7 +294,7 @@ def main():
 
         if len(foe_markers) > 1:
             # TODO: Support multiple foe targets ???
-            logger.warning(f'More than one foe detected. Targeting procedure aborted.')
+            logging.warning(f'More than one foe detected. Targeting procedure aborted.')
 
         if len(foe_markers) == 1:
             # calculate distance between image center and foe markers center
@@ -254,19 +303,41 @@ def main():
             error_x = marker_center_x - frame_center[0]
             error_y = marker_center_y - frame_center[1]
 
+            # draw error vector
+            display_frame = cv2.line(display_frame, pt1=(marker_center_x, marker_center_y), pt2=frame_center, color=(0, 255, 0))
+
+            # calculate X & Y motor speed
+            motor_speed_x = calculate_motor_speed(error_x,
+                DEADZONE_RADIUS_IN_PIXELS,
+                MIN_X_MOTOR_SPEED,
+                MAX_X_MOTOR_SPEED,
+                K_X)
+
+            motor_speed_y = calculate_motor_speed(error_y,
+                DEADZONE_RADIUS_IN_PIXELS,
+                MIN_Y_MOTOR_SPEED,
+                MAX_Y_MOTOR_SPEED,
+                K_Y)
+
+            logging.debug(f'X Error: {error_x}, X Speed: {motor_speed_x}')
+            logging.debug(f'Y Error: {error_y}, Y Speed: {motor_speed_y}')
+
+            # display error and motor speed
             display_frame = cv2.putText(display_frame,
-                f'E.X: {error_x}, E.Y: {error_y}',
+                f'Error X: {error_x}, Speed X: {motor_speed_x}',
                 org=(10, 60),
                 fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                 fontScale=0.5,
                 color=(0, 255, 0))
-
-            # draw error vector
-            display_frame = cv2.line(display_frame, pt1=(marker_center_x, marker_center_y), pt2=frame_center, color=(0, 255, 0))
+            display_frame = cv2.putText(display_frame,
+                f'Error Y: {error_y}, Speed Y: {motor_speed_y}',
+                org=(10, 80),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=0.5,
+                color=(0, 255, 0))
 
         # display modified augmented frame
         cv2.imshow(f'Camera Live Feed', display_frame)
-        # cv2.imshow(f'Warped Image', warped_image)
         cv2.waitKey(1)
 
     cv2.destroyAllWindows()

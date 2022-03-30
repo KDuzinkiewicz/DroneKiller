@@ -32,6 +32,14 @@
             "args": ["-c", "0", "-t", "60"]
         },
         {
+            "name": "Python: pc_control.py built-in fixed",
+            "type": "python",
+            "request": "launch",
+            "program": "PC/pc_control/pc_control.py",
+            "console": "integratedTerminal",
+            "args": ["-c", "0", "-t", "30"]
+        },
+        {
             "name": "Python: generate_aruco.py",
             "type": "python",
             "request": "launch",

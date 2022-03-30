@@ -1,16 +1,50 @@
 import argparse
 import cv2
+import cv2.aruco as aruco
 import logging
 import time
-
-from cv2 import RETR_CCOMP
-import cv2.aruco as aruco
+import serial
 import argparse
 import numpy as np
 
 
+ARDUINO_SERIAL_PORT = 'COM7'
+
+
 # set root logger log level
 logging.getLogger().setLevel(logging.INFO)
+
+
+def send_motor_x_y_speed(arduino_serial_port, motor_speed_x, motor_speed_y):
+    '''
+    Send command over serial to Arduino to set the X & Y DC motor speed
+    '''
+
+    arduino_serial_port.write(bytearray(f'DC_{motor_speed_x}_{motor_speed_y}'))
+
+
+def send_gun_on(arduino_serial_port):
+    '''
+    Send command over serial to Arduino to turn on the gun motor
+    '''
+
+    arduino_serial_port.write(b'GUN_ON')
+
+
+def send_gun_off(arduino_serial_port):
+    '''
+    Send command over serial to Arduino to turn off the gun motor
+    '''
+
+    arduino_serial_port.write(b'GUN_OFF')
+
+
+def send_pull_trigger(arduino_serial_port):
+    '''
+    Send command over serial to Arduino to pull the trigger
+    '''
+
+    arduino_serial_port.write(b'TRG')
 
 
 def get_camera_width_height(camera_idx):
@@ -43,7 +77,7 @@ def get_cameras(max_idx=10):
     Gets a dictionary of camera indices and image parameters (width and height)
 
     Parameters:
-        max_idx (int): up to what idex to enumerate
+        max_idx (int): up to what camera index to enumerate
 
     Returns:
         cameras (dict): key = camera index, value = tuple: camera's image frame width and height
@@ -133,15 +167,28 @@ def main():
     MAX_Y_MOTOR_SPEED = 255
     K_Y = 1.0
 
-    logging.info('Dummy Camera Example')
+    logging.info('PC Control App')
 
     # input arguments parser
+    logging.info('Parsing input arguments')
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--camera_index", default=-1, type=int,
                     help="camera index")
     parser.add_argument("-t", "--time", default=-1, type=int,
                     help="time of operation in seconds")
     args = parser.parse_args()
+
+    logging.info(f'Opening serial port: {ARDUINO_SERIAL_PORT}...')
+    # create a port (it will be automatically opened upon creation)
+    try:
+        arduino_serial_port = serial.Serial(ARDUINO_SERIAL_PORT)
+    except:
+        logging.error(f'Serial port {ARDUINO_SERIAL_PORT} could not be opened. Exiting.')
+        return
+
+    if not arduino_serial_port.is_open:
+        logging.error('Serial port not open.')
+    logging.info('Serial port open.')
 
     cameras = None
     if args.camera_index == -1:
@@ -185,6 +232,9 @@ def main():
 
     # calculate camera's image frame center in pixels
     frame_center = (int(width/2), int(height/2))
+
+    # turn on the gun
+    send_gun_on(arduino_serial_port)
 
     # open video stream
     logging.info(f'Opening video stream for camera {camera_idx}...')
@@ -321,6 +371,9 @@ def main():
 
             logging.debug(f'X Error: {error_x}, X Speed: {motor_speed_x}')
             logging.debug(f'Y Error: {error_y}, Y Speed: {motor_speed_y}')
+
+            # set motor speed using Arduino serial port
+            send_motor_x_y_speed(arduino_serial_port, motor_speed_x, motor_speed_y)
 
             # display error and motor speed
             display_frame = cv2.putText(display_frame,

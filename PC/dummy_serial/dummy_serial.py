@@ -1,6 +1,3 @@
-from turtle import delay
-import cv2
-import numpy as np
 import serial
 import logging
 import time

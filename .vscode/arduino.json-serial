@@ -1,6 +1,6 @@
 {
     "port": "COM7",
     "board": "arduino:avr:uno",
-    "sketch": "ArduinoUno\\arduino_control\\arduino_control.ino",
+    "sketch": "ArduinoUno\\dummy_serial\\dummy_serial.ino",
     "output": "ArduinoUno\\build"
 }

@@ -20,7 +20,7 @@ def send_motor_x_y_speed(arduino_serial_port, motor_speed_x, motor_speed_y):
     Send command over serial to Arduino to set the X & Y DC motor speed
     '''
 
-    arduino_serial_port.write(bytearray(f'DC_{motor_speed_x}_{motor_speed_y}'))
+    arduino_serial_port.write(bytearray(f'DC {motor_speed_x} {motor_speed_y}\n'))
 
 
 def send_gun_on(arduino_serial_port):
@@ -28,7 +28,7 @@ def send_gun_on(arduino_serial_port):
     Send command over serial to Arduino to turn on the gun motor
     '''
 
-    arduino_serial_port.write(b'GUN_ON')
+    arduino_serial_port.write(b'GUN_ON\n')
 
 
 def send_gun_off(arduino_serial_port):
@@ -36,7 +36,7 @@ def send_gun_off(arduino_serial_port):
     Send command over serial to Arduino to turn off the gun motor
     '''
 
-    arduino_serial_port.write(b'GUN_OFF')
+    arduino_serial_port.write(b'GUN_OFF\n')
 
 
 def send_pull_trigger(arduino_serial_port):
@@ -44,7 +44,7 @@ def send_pull_trigger(arduino_serial_port):
     Send command over serial to Arduino to pull the trigger
     '''
 
-    arduino_serial_port.write(b'TRG')
+    arduino_serial_port.write(b'TRG\n')
 
 
 def get_camera_width_height(camera_idx):
